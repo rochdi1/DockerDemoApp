@@ -1,0 +1,52 @@
+pipeline {
+    agent any
+    
+    // REMOVED 'tools { maven ... }' to stop Jenkins from using its broken sandbox tool
+    
+    environment {
+        // Enforce the system Java 21 paths that work in your terminal
+        JAVA_HOME = '/usr/lib/jvm/java-21-openjdk-amd64'
+        M2_HOME   = '/usr/share/maven'
+        
+        // Update the PATH variable so Jenkins uses your system's working commands first
+        PATH      = "${env.M2_HOME}/bin:${env.JAVA_HOME}/bin:${env.PATH}"
+        
+        IMAGE_NAME   = "rochdi1/dockerdemoapp:${BUILD_NUMBER}"
+        IMAGE_LATEST = "rochdi1/dockerdemoapp:latest"
+    }
+    
+    stages {
+        stage('Clone') {
+            steps {
+                git branch: 'master', url: 'https://github.com/rochdi1/DockerDemoApp.git'
+            }
+        }
+        
+        stage('Build Artifact') {
+            steps {
+                // This will now print Maven 3.9.12 with Java 21 right inside Jenkins
+                sh 'mvn -version'
+                sh 'mvn clean package -DskipTests'
+            }
+        }
+        
+        stage('Docker Build') {
+            steps {
+                sh "docker build -t ${IMAGE_NAME} -t ${IMAGE_LATEST} ."
+            }
+        }
+        
+        stage('Deploy with Compose') {
+            steps {
+                sh 'docker compose down --volumes --remove-orphans'
+                sh 'docker compose up -d'
+            }
+        }
+    }
+    
+    post {
+        always {
+            sh 'docker image prune -f'
+        }
+    }
+}
