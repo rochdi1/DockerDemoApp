@@ -1,0 +1,43 @@
+version: "3.8"
+
+services:
+
+  mysql:
+    image: mysql:8
+    container_name: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: demo_db
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  
+
+  app:
+    build: .
+    image: docker-demo
+    ports:
+      - "9090:9090"
+    environment:
+      SERVER_PORT: 9090
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: demo_db
+      DB_USERNAME: root
+      DB_PASSWORD: root
+    volumes:
+      - names-volume:/app
+    depends_on:
+      mysql:
+        condition: service_healthy # Wait for MySQL to be fully ready
+
+volumes:
+  names-volume:
+  mysql-data:
