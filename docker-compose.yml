@@ -1,7 +1,6 @@
 version: "3.8"
 
 services:
-
   mysql:
     image: mysql:8
     container_name: mysql
@@ -18,11 +17,12 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-  
 
   app:
-    build: .
-    image: docker-demo
+    container_name: docker-demo-app
+    # Entferne 'build: .', da Jenkins das Image bereits in der 'Docker Build'-Stage baut
+    image: rochdi1/dockerdemoapp:latest
+    restart: always
     ports:
       - "9090:9090"
     environment:
@@ -32,11 +32,12 @@ services:
       DB_NAME: demo_db
       DB_USERNAME: root
       DB_PASSWORD: root
+    # WICHTIG: Überschreibe nicht das /app Verzeichnis, wenn dort deine jar liegt!
     volumes:
-      - names-volume:/app
+      - names-volume:/app/data
     depends_on:
       mysql:
-        condition: service_healthy # Wait for MySQL to be fully ready
+        condition: service_healthy
 
 volumes:
   names-volume:
